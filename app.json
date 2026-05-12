@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "sdkVersion": "49.0.0",
     "platforms": ["ios", "android", "web"],
-    "orientation": "portrait"
+    "orientation": "portrait",
+    "privacy": "unlisted"
   }
 }

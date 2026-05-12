@@ -59,6 +59,7 @@ export default function App() {
         setLoading(false);
       }
     }
+
     loadBoard();
   }, []);
 
@@ -106,6 +107,21 @@ export default function App() {
     );
   };
 
+  const updateCardText = (columnId, cardId, text) => {
+    setColumns((prevColumns) =>
+      prevColumns.map((column) =>
+        column.id === columnId
+          ? {
+              ...column,
+              cards: column.cards.map((card) =>
+                card.id === cardId ? { ...card, text } : card,
+              ),
+            }
+          : column,
+      ),
+    );
+  };
+
   const moveCard = (columnId, cardId, direction) => {
     setColumns((prevColumns) => {
       const currentIndex = prevColumns.findIndex((column) => column.id === columnId);
@@ -131,6 +147,14 @@ export default function App() {
     });
   };
 
+  const updateColumnTitle = (columnId, title) => {
+    setColumns((prevColumns) =>
+      prevColumns.map((column) =>
+        column.id === columnId ? { ...column, title } : column,
+      ),
+    );
+  };
+
   const addColumn = () => {
     const title = newColumnTitle.trim();
     if (!title) {
@@ -147,13 +171,43 @@ export default function App() {
     setNewColumnTitle('');
   };
 
+  const deleteColumn = (columnId) => {
+    Alert.alert('Conferma', 'Eliminare questa colonna e tutte le card al suo interno?', [
+      { text: 'Annulla', style: 'cancel' },
+      {
+        text: 'Elimina',
+        style: 'destructive',
+        onPress: () => {
+          setColumns((prevColumns) => prevColumns.filter((column) => column.id !== columnId));
+        },
+      },
+    ]);
+  };
+
+  const resetBoard = () => {
+    Alert.alert('Ripristina bacheca', 'Vuoi riportare la bacheca allo stato iniziale?', [
+      { text: 'Annulla', style: 'cancel' },
+      {
+        text: 'Ripristina',
+        onPress: () => setColumns(defaultColumns),
+      },
+    ]);
+  };
+
   const renderCard = (columnId, columnIndex) => ({ item }) => {
     const canMoveLeft = columnIndex > 0;
     const canMoveRight = columnIndex < columns.length - 1;
 
     return (
       <View style={styles.cardItem}>
-        <Text style={styles.cardText}>{item.text}</Text>
+        <TextInput
+          style={styles.cardTextInput}
+          value={item.text}
+          onChangeText={(value) => updateCardText(columnId, item.id, value)}
+          multiline
+          placeholder="Testo della card"
+          placeholderTextColor="#9ca3af"
+        />
         <View style={styles.cardButtonsRow}>
           <TouchableOpacity
             style={[styles.cardButton, !canMoveLeft && styles.cardButtonDisabled]}
@@ -173,7 +227,7 @@ export default function App() {
             style={[styles.cardButton, styles.deleteButton]}
             onPress={() => deleteCard(columnId, item.id)}
           >
-            <Text style={styles.cardButtonLabel}>×</Text>
+            <Text style={[styles.cardButtonLabel, styles.deleteButtonLabel]}>×</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -183,7 +237,18 @@ export default function App() {
   const renderColumn = ({ item, index }) => {
     return (
       <View style={styles.columnCard}>
-        <Text style={styles.columnTitle}>{item.title}</Text>
+        <View style={styles.columnHeaderRow}>
+          <TextInput
+            value={item.title}
+            onChangeText={(value) => updateColumnTitle(item.id, value)}
+            style={styles.columnTitleInput}
+            placeholder="Titolo colonna"
+            placeholderTextColor="#64748b"
+          />
+          <TouchableOpacity style={styles.deleteColumnButton} onPress={() => deleteColumn(item.id)}>
+            <Text style={styles.deleteColumnButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.addCardRow}>
           <TextInput
             value={newCardTextByColumn[item.id] || ''}
@@ -227,7 +292,7 @@ export default function App() {
       >
         <Text style={styles.headerTitle}>Bacheca Kanban</Text>
         <Text style={styles.headerSubtitle}>
-          Aggiungi card, spostale e verifica la persistenza con AsyncStorage.
+          Gestisci task, modifica le card e salvali automaticamente.
         </Text>
         <View style={styles.newColumnContainer}>
           <TextInput
@@ -240,6 +305,12 @@ export default function App() {
           <TouchableOpacity style={styles.newColumnButton} onPress={addColumn}>
             <Text style={styles.newColumnButtonText}>Aggiungi colonna</Text>
           </TouchableOpacity>
+        </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.resetButton} onPress={resetBoard}>
+            <Text style={styles.resetButtonText}>Ripristina bacheca</Text>
+          </TouchableOpacity>
+          <Text style={styles.columnCountText}>{columns.length} colonne</Text>
         </View>
         <FlatList
           horizontal
@@ -257,7 +328,7 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f2f4ff',
+    backgroundColor: '#eef2ff',
   },
   container: {
     flex: 1,
@@ -265,7 +336,7 @@ const styles = StyleSheet.create({
     paddingTop: 18,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800',
     color: '#0f172a',
     marginBottom: 6,
@@ -273,7 +344,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 15,
     color: '#475569',
-    marginBottom: 15,
+    marginBottom: 16,
     lineHeight: 22,
   },
   newColumnContainer: {
@@ -285,64 +356,104 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: '#cbd5e1',
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     marginRight: 10,
     color: '#0f172a',
   },
   newColumnButton: {
     backgroundColor: '#4f46e5',
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 14,
     paddingHorizontal: 14,
   },
   newColumnButtonText: {
     color: '#ffffff',
     fontWeight: '700',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  resetButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  resetButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  columnCountText: {
+    color: '#334155',
+    fontWeight: '600',
+  },
   boardContainer: {
     paddingBottom: 24,
   },
   columnCard: {
-    width: 300,
-    backgroundColor: '#eef2ff',
-    borderRadius: 20,
-    padding: 16,
-    marginRight: 14,
+    width: 320,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 18,
+    marginRight: 16,
     shadowColor: '#0f172a',
     shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 7 },
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
   },
-  columnTitle: {
+  columnHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  columnTitleInput: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '800',
-    color: '#1e293b',
-    marginBottom: 12,
+    color: '#0f172a',
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  deleteColumnButton: {
+    width: 34,
+    height: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#fbbf24',
+  },
+  deleteColumnButtonText: {
+    color: '#0f172a',
+    fontWeight: '800',
+    fontSize: 18,
   },
   addCardRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   addCardInput: {
     flex: 1,
     borderWidth: 1,
     borderColor: '#cbd5e1',
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     color: '#0f172a',
   },
   addButton: {
     marginLeft: 8,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#4338ca',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   addButtonText: {
     color: '#ffffff',
@@ -356,8 +467,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   cardItem: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: '#f8fafc',
+    borderRadius: 18,
     padding: 14,
     marginBottom: 12,
     shadowColor: '#0f172a',
@@ -365,9 +476,10 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
   },
-  cardText: {
-    color: '#0f172a',
+  cardTextInput: {
+    minHeight: 44,
     fontSize: 15,
+    color: '#0f172a',
     marginBottom: 12,
   },
   cardButtonsRow: {
@@ -376,14 +488,17 @@ const styles = StyleSheet.create({
   },
   cardButton: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 10,
     marginHorizontal: 2,
     backgroundColor: '#e2e8f0',
     alignItems: 'center',
   },
   deleteButton: {
-    backgroundColor: '#fb7185',
+    backgroundColor: '#f87171',
+  },
+  deleteButtonLabel: {
+    color: '#ffffff',
   },
   cardButtonLabel: {
     color: '#0f172a',
@@ -396,6 +511,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eef2ff',
   },
 });
