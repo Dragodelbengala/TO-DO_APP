@@ -24,6 +24,16 @@ npx expo start
 #    - Scansiona il QR code con l'app Expo Go su un dispositivo fisico
 ```
 
+## 📹 Video dimostrativo
+
+Vedi [DEMO_SCRIPT.md](DEMO_SCRIPT.md) per le istruzioni su come registrare un video dimostrativo di 60-90 secondi che mostra:
+- ✅ Creazione di una nuova card in una colonna
+- ✅ Spostamento di una card tra due colonne diverse
+- ✅ Eliminazione di una card
+- ✅ Riavvio dell'app per dimostrare la persistenza dei dati
+
+Il video deve mostrare chiaramente che tutti i dati vengono persistiti automaticamente con AsyncStorage e che l'interfaccia è reattiva e intuitiva.
+
 ## 📊 Struttura dati e architettura dello stato
 
 ### Modello di dati
